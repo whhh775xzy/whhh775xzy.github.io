@@ -382,24 +382,17 @@ if (launchPage) {
       action: "进入作品集",
       href: "portfolio.html",
       status: "了解更多",
-      theme: "",
-    },
-    {
-      kicker: "预留入口 · 项目作品",
-      title: "持续推进中的<br>项目作品",
-      copy: "这里将用于展示正在推进的设计项目、阶段性成果与尚未整理成完整案例的作品。",
-      action: "即将开放",
-      href: "#",
-      status: "即将开放",
+      startAction: "View Portfolio",
       theme: "",
     },
     {
       kicker: "预留入口 · 视觉实验室",
       title: "动态与形式的<br>视觉实验",
       copy: "这里将用于展示视觉实验、动态设计、智能图像探索和更自由的创意方向。",
-      action: "即将开放",
-      href: "#",
-      status: "即将开放",
+      action: "探索实验",
+      href: "visual-lab.html",
+      status: "已开放入口",
+      startAction: "Explore Lab",
       theme: "",
     },
     {
@@ -409,6 +402,7 @@ if (launchPage) {
       action: "即将开放",
       href: "#",
       status: "即将开放",
+      startAction: "Coming Soon",
       theme: "",
     },
   ];
@@ -420,13 +414,13 @@ if (launchPage) {
   const launchCopy = document.querySelector("[data-launch-copy]");
   const launchAction = document.querySelector("[data-launch-action]");
   const launchStatus = document.querySelector("[data-launch-status]");
+  const launchStartButton = document.querySelector(".launch-start-button");
   const launchMenuButton = document.querySelector("[data-launch-menu]");
   const launchMobileMenu = document.querySelector("[data-launch-mobile-menu]");
   const launchGalaxyCanvas = document.querySelector("[data-galaxy]");
   let launchActiveIndex = 0;
   let launchTransitioning = false;
   const launchGalaxyPresets = [
-    { hueShift: 240, density: 1.5, glow: 0.5, saturation: 0.8 },
     { hueShift: 240, density: 1.5, glow: 0.5, saturation: 0.8 },
     { hueShift: 240, density: 1.5, glow: 0.5, saturation: 0.8 },
     { hueShift: 240, density: 1.5, glow: 0.5, saturation: 0.8 },
@@ -461,6 +455,11 @@ if (launchPage) {
     launchAction.setAttribute("href", entry.href);
     launchAction.toggleAttribute("aria-disabled", entry.href === "#");
     launchStatus.textContent = entry.status;
+    if (launchStartButton) {
+      launchStartButton.textContent = entry.startAction || entry.action;
+      launchStartButton.setAttribute("href", entry.href);
+      launchStartButton.toggleAttribute("aria-disabled", entry.href === "#");
+    }
     document.body.dataset.launchTheme = entry.theme;
     startGalaxyEffect();
     closeLaunchMenu();
@@ -482,6 +481,21 @@ if (launchPage) {
       setLaunchEntry(Number(button.dataset.launchMobileChoice));
     });
   });
+
+  const launchEntryAliases = {
+    "#portfolio": 0,
+    "#visual-lab": 1,
+    "#visual-experiment": 1,
+    "#about": 2,
+  };
+
+  const syncLaunchEntryFromHash = () => {
+    const index = launchEntryAliases[window.location.hash.toLowerCase()];
+    if (Number.isInteger(index)) setLaunchEntry(index);
+  };
+
+  syncLaunchEntryFromHash();
+  window.addEventListener("hashchange", syncLaunchEntryFromHash);
 
   launchAction?.addEventListener("click", (event) => {
     if (launchAction.getAttribute("href") === "#") event.preventDefault();
@@ -813,4 +827,43 @@ if (launchPage) {
     }
   }
 
+}
+
+const exploreRailLinks = [...document.querySelectorAll("[data-rail-target]")];
+if (exploreRailLinks.length) {
+  const exploreRail = document.querySelector(".explore-side-rail");
+  const exploreBackTop = document.querySelector("[data-explore-back-top]");
+  const exploreRailSections = exploreRailLinks
+    .map((link) => document.getElementById(link.dataset.railTarget))
+    .filter(Boolean);
+
+  const setExploreRailActive = (id) => {
+    exploreRailLinks.forEach((link) => {
+      const isActive = link.dataset.railTarget === id;
+      link.classList.toggle("is-active", isActive);
+      if (isActive) {
+        link.setAttribute("aria-current", "true");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    });
+  };
+
+  const syncExploreRail = () => {
+    const checkpoint = window.innerHeight * 0.42;
+    const hero = document.getElementById("top");
+    const showAfter = hero ? Math.max(120, hero.offsetHeight - window.innerHeight * 0.28) : window.innerHeight * 0.72;
+    exploreRail?.classList.toggle("is-visible", window.scrollY >= showAfter);
+    exploreBackTop?.classList.toggle("is-visible", window.scrollY >= showAfter);
+    const current = exploreRailSections.reduce((active, section) => {
+      const rect = section.getBoundingClientRect();
+      return rect.top <= checkpoint ? section : active;
+    }, exploreRailSections[0]);
+
+    if (current?.id) setExploreRailActive(current.id);
+  };
+
+  syncExploreRail();
+  window.addEventListener("scroll", syncExploreRail, { passive: true });
+  window.addEventListener("resize", syncExploreRail);
 }
